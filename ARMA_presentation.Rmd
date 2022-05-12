@@ -7,7 +7,6 @@ output:
     slide_level: 2
     md_extensions: +grid_tables
   html_document: default
-bibliography: references.bib
 ---
 
 ```{r, setup, echo=FALSE, warning = FALSE, message = FALSE, results = 'hide'}
@@ -26,32 +25,57 @@ cbPalette <- c(
 ```
 
 ## Overview
-  1. Linear regression assumptions
-  2. Alternative error models
-  3. ARMA
-  4. Practical examples
+  1. Time series definitions
+  2. ARMA
+  3. Linear model approach
+  4. Alternative error models
+  5. Solutions
 
 ## Time series
   - A time series is a set of observations $x_t$, each recorded at a specific time $t$.
   - Can be discrete or continuous
   - $x_1, x_2, x_3, \ldots, x_n$
-
-## Vocabulary
+  
+## Example from ExOnc
+![Visualization by Lydia Liu](./ts_example.png)
+  
+## Time series definitions
   - Lag is a previous value in the time series
     - Lag 1 is previous value
     - Lag 2 for $x_{t}$ is $x_{t - 2}$
-  - 
-  
-## Time series tools
   - Autocorrelation/autocovariance function (`acf` function in R)
     - Computes the correlation for each lag in the time series
     - ACF at 0 is always 1
-    - ACF at 1 is the correlation between x_t and x_{t-1} for all values in the time series
+    - ACF at 1 is the correlation between $x_t$ and $x_{t-1}$ for all values in the time series
   - Partial autocorrelation function (`pacf` function in R)
 
 $$
 \dfrac{\text{Covariance}(x_t, x_{t-2}| x_{t-1})}{\sqrt{\text{Variance}(x_t|x_{t-1})\text{Variance}(x_{t-2}|x_{t-1})}}
 $$
+
+## Time series definitions
+  - **Differencing** a time series $\{x_t\}$ results in a new time series $\{x^{\prime}_t\}$ where $x^{\prime}_t = x_t - x_{t - 1}$
+  - **Seasonality** is a repeating pattern that occurs on a period
+  - A time series is **stationary** if the ACF does not depend on time $t$, but only on the lag $h$.
+  
+## Differencing
+
+```{r}
+n <- 80
+y <- ts(3 * sort(rnorm(n)) + arima.sim(n, model = list(ar = c(.1))))
+par(mfrow = c(1, 2))
+plot(y)
+plot(diff(y))
+```
+
+## Seasonality
+
+```{r}
+par(mfrow = c(1, 2))
+y <- ts(rnorm(80,0,3) + 20*sin(2*pi*(1:80)/12), frequency=12)
+plot(y)
+plot(diff(y))
+```
     
 ## Example - Normal
   - $\{ X_t \}, X_t \sim N(0,1)$
@@ -119,50 +143,48 @@ lines(z.rw, col = cbPalette[3])
 ```
 
 ## Moving average - MA(1)
-  - $X_t = Z_t + \theta Z_{t - 1}$, $t = 0, 1, \ldots$ where $Z_t$ is white noise, mean 0 sd $\sigma$
+  - MA(1): $X_t = Z_t + \theta Z_{t - 1}$, $t = 0, 1, \ldots$ where $Z_t$ is white noise, mean 0 sd $\sigma$
   
 $$
 \begin{aligned}
   X_1 &= Z_1 \\
-  X_2 &= Z_2 + \theta X_1 \\
-  X_3 &= Z_3 + \theta Z_2 \\
-  &= Z_3 + \theta X_2 - \theta^2 X_1
+  X_2 &= Z_2 + \theta Z_1 \\
+  X_3 &= Z_3 + \theta Z_2
 \end{aligned}
 $$
 
-## Moving average - MA(1)
-```{r}
-n <- 1000
-x.ma1 <- arima.sim(n, model = list(ma = c(.25)))
-x.ma2 <- arima.sim(n, model = list(ma = c(-3)))
-x.ma3 <- arima.sim(n, model = list(ma = c(3)))
-
-par(mfrow = c(3, 1))
-plot(x.ma1, ylim = c(min(x.ma1, x.ma2, x.ma3), max(x.ma1, x.ma2, x.ma3)), ylab = '', main = "theta = 0.25")
-plot(x.ma2, ylim = c(min(x.ma1, x.ma2, x.ma3), max(x.ma1, x.ma2, x.ma3)), ylab = '', col = cbPalette[2], main = "theta = -3")
-plot(x.ma3, ylim = c(min(x.ma1, x.ma2, x.ma3), max(x.ma1, x.ma2, x.ma3)), ylab = '', col = cbPalette[3], main = "theta = 3")
-```
+## Moving average - MA(3)
+  - MA(3): $X_t = Z_t + \theta_1 Z_{t - 1} + \theta_2 Z_{t - 2} + \theta_3 Z_{t - 3}$, $t = 0, 1, \ldots$ where $Z_t$ is white noise, mean 0 sd $\sigma$
+$$
+\begin{aligned}
+  X_1 &= Z_1 \\
+  X_2 &= Z_2 + \theta_1 Z_1 \\
+  X_3 &= Z_3 + \theta_1 Z_2 + \theta_2 Z_{1} \\
+  X_4 &= Z_4 + \theta_1 Z_{3} + \theta_2 Z_{2} + \theta_3 Z_{1}\\
+  X_5 &= Z_5 + \theta_1 Z_{4} + \theta_2 Z_{3} + \theta_3 Z_{2}
+\end{aligned}
+$$
 
 ## Moving average MA(q)
 ```{r}
 n <- 1000
-x.ma1 <- arima.sim(n, model = list(ma = c(1)))
-x.ma2 <- arima.sim(n, model = list(ma = c(1, 1, 1)))
-x.ma3 <- arima.sim(n, model = list(ma = c(1, 1, 1, 1, 1)))
+x.ma.q1 <- arima.sim(n, model = list(ma = c(1)))
+x.ma.q2 <- arima.sim(n, model = list(ma = c(1, 1, 1)))
+x.ma.q3 <- arima.sim(n, model = list(ma = c(1, 1, 1, 1, 1)))
 
 par(mfrow = c(3, 1))
-plot(x.ma1, ylim = c(min(x.ma1, x.ma2, x.ma3), max(x.ma1, x.ma2, x.ma3)), ylab = '', main = "MA(1)")
-plot(x.ma2, ylim = c(min(x.ma1, x.ma2, x.ma3), max(x.ma1, x.ma2, x.ma3)), ylab = '', col = cbPalette[2], main = "MA(3)")
-plot(x.ma3, ylim = c(min(x.ma1, x.ma2, x.ma3), max(x.ma1, x.ma2, x.ma3)), ylab = '', col = cbPalette[3], main = "MA(5)")
+plot(x.ma.q1, ylim = c(min(x.ma.q1, x.ma.q2, x.ma.q3), max(x.ma.q1, x.ma.q2, x.ma.q3)), ylab = '', main = "MA(1)")
+plot(x.ma.q2, ylim = c(min(x.ma.q1, x.ma.q2, x.ma.q3), max(x.ma.q1, x.ma.q2, x.ma.q3)), ylab = '', col = cbPalette[2], main = "MA(3)")
+plot(x.ma.q3, ylim = c(min(x.ma.q1, x.ma.q2, x.ma.q3), max(x.ma.q1, x.ma.q2, x.ma.q3)), ylab = '', col = cbPalette[3], main = "MA(5)")
 ```
 
-## Moving average MA(1) - ACF/PACF
+## Moving average MA(q) - ACF/PACF
   - In general, MA(q) should have ACF decreasing to $q$ lags then have 0 autocorrelation
   - MA(q) should have PACF gradually decreasing to 0
 ```{r}
 par(mfrow = c(1, 2))
-acf(x.ma3)
-pacf(x.ma3)
+acf(x.ma.q3, main = 'MA(5)')
+pacf(x.ma.q3, main = 'MA(5)')
 ```
 
 ## Simple Linear Regression
@@ -185,8 +207,8 @@ $$
 True model is $y_i = 3t_i + \varepsilon_i$, where $\{ \varepsilon_i \}$ is AR(1).
 ```{r}
 set.seed(13)
-x <- rnorm(100)
-x.ar <- as.numeric(arima.sim(100, model = list(ar = c(.95))))
+x <- sort(rnorm(100))
+x.ar <- as.numeric(arima.sim(100, model = list(ar = c(.25))))
 y <- 3 * x + x.ar
 plot(y ~ x)
 ```
@@ -218,14 +240,14 @@ pacf(residuals(mod))
 ```{r, cache=TRUE}
 set.seed(13)
 res1 <- t(replicate(1e4, {
-  x <- rnorm(100)
+  x <- sort(rnorm(100))
   x.ar <- as.numeric(arima.sim(100, model = list(ar = c(.75))))
   y <- 3 * x + x.ar
   summary(lm(y ~ x))$coefficients[2, ]
 }))
 
 res.correct <- t(replicate(1e4, {
-  x <- rnorm(100)
+  x <- sort(rnorm(100))
   y <- 3 * x + rnorm(100)
   summary(lm(y ~ x))$coefficients[2, ]
 }))
@@ -233,18 +255,25 @@ res.correct <- t(replicate(1e4, {
 
   - $\text{Var}(\hat{\beta})$ is `r round(var(res1[, 1]) / var(res.correct[,1]), 2)` times higher with the AR(1) errors than the variance in the correct model
   - Note that the variance is not always higher, but could be biased in either direction
-  - In this case our standard errors will be higher on average and p-values high as well
+  - In this case our standard errors will be higher on average and p-values higher as well
 
 ## Solutions
   - Use a model that does not imply constant, non-correlated errors
     - `forecast::auto.arima` can fit linear regression with ARIMA errors
       - Coefficients can be added via `xreg` argument
     - `nlme::gls` generalized least squares fitting (Errors allowed to be correlated or unequal variance)
-      - Correlation structure added via `correlation = corAR1(...)`
+      - Correlation structure added via `correlation = corAR1(form = ~ 1 | group)`
     - `nlme::lme` linear mixed modeling (e.g. fixed and random effects)
       - Note that correlation structure modeling of the errors is not supported in `lme4`
+  - `mgcv` package: Generalized additive (mixed) models with support for correlation structure (Thanks Jaron for suggestion)
 
-## auto.arima
-```{r, echo=TRUE}
-auto.arima(y, xreg = x, d = 0)
+## auto.arima and gls
+
+```{r, echo=TRUE, eval=FALSE}
+nlme::gls(y ~ x, correlation = nlme::corAR1(form = ~ 1))
+forecast::auto.arima(y, xreg = x, d = 0)
 ```
+
+## 
+
+Questions?
