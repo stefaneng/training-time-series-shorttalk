@@ -3,10 +3,11 @@ title: "Time-series analysis"
 author: "Stefan Eng"
 date: "5/12/2021"
 output:
+  github_document: default
+  html_document: default
   beamer_presentation:
     slide_level: 2
     md_extensions: +grid_tables
-  html_document: default
 ---
 
 ```{r, setup, echo=FALSE, warning = FALSE, message = FALSE, results = 'hide'}
